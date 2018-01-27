@@ -60,14 +60,134 @@ flights %>%
   
 ```
 
+The trend is almost the same!
 
+### 2. Compare dep_time, sched_dep_time, and dep_delay. Are the consisistent? Explain your finding.
+```{r 5}
+convert_to_datetime <- function(year, month, day, time){
+  make_datetime(year, month, day, time %/% 100, time %% 100)
+}
 
+flights %>%
+  filter(!is.na(dep_time), !is.na(arr_time)) %>%
+  mutate(sched_dep_datetime = convert_to_datetime(year, month, day, sched_dep_time),
+         dep_datetime = convert_to_datetime(year, month, day, dep_time)) %>%
+  select(sched_dep_datetime, dep_datetime, dep_delay, flight) %>%
+  mutate(calcuated_delay = dep_datetime - sched_dep_datetime,
+         difference = as.numeric(calcuated_delay/60 - dep_delay)) %>%
+  ggplot(aes(difference)) +
+  geom_histogram()
+```
 
+### 3. Compare air_time with the duration between the departure and arrival. Explain your findings.
 
+```{r 6}
+flights %>%
+  filter(!is.na(dep_time), !is.na(arr_time), !is.na(air_time)) %>%
+  mutate(
+  dep_datetime = convert_to_datetime(year, month, day, dep_time),
+  arr_datetime = convert_to_datetime(year, month, day, arr_time)
+  ) %>%
+  select(dep_datetime, arr_datetime, air_time, flight) %>%
+  mutate(air_time_calculated = arr_datetime - dep_datetime,
+  difference = as.numeric(air_time_calculated/60 - air_time)) %>%
+  ggplot(aes(difference)) +
+  geom_histogram(bins = 30)
+```
 
+### 4. How does the average delay time change over the course of a day?
 
+```{r 7}
+flights %>%
+  filter(!is.na(dep_time), !is.na(arr_time), !is.na(air_time)) %>%
+  mutate(sched_dep_datetime = convert_to_datetime(year, month, day, sched_dep_time)) %>%
+  select(sched_dep_datetime, dep_delay, flight) %>%
+  mutate(hour = hour(sched_dep_datetime)) %>%
+  group_by(hour) %>%
+  summarise(mean_delay = mean(dep_delay)) %>%
+  ggplot(aes(hour, mean_delay)) +
+  geom_line()
+```
 
+### 5. On what day of the week should you leave if you want to minimize the chance of delay?
 
+```{r 8}
+flights %>%
+  filter(!is.na(dep_time), !is.na(arr_time), !is.na(air_time)) %>%
+  mutate(sched_dep_datetime = convert_to_datetime(year, month, day, sched_dep_time)) %>%
+  select(sched_dep_datetime, dep_delay, flight) %>%
+  mutate(wday = wday(sched_dep_datetime, label = T)) %>%
+  group_by(wday) %>%
+  summarise(mean_delay = mean(dep_delay)) %>%
+  ggplot(aes(wday,mean_delay)) +
+  geom_bar(stat = "identity")
+```
+
+Saturday looks good!
+
+### 6. What makes distribution of diamonds\$carat and flights\$sched_dep_time similar?
+
+```{r 9}
+ggplot(diamonds, aes(carat)) +
+  geom_histogram(binwidth = 0.01)
+
+ggplot(flights, aes(sched_dep_time)) +
+  geom_histogram(binwidth = 3)
+
+```
+Rounding to whole numbers
+
+### 7. Confirm the hypothesis that the early departures of flights in minutes 20-30 and 50-60 are caused by scheduled flights that leave early.
+
+```{r 10}
+breaks <- c(0:6)*10
+
+flights %>%
+  filter(!is.na(dep_time), !is.na(arr_time), !is.na(air_time)) %>%
+  mutate(minute = sched_dep_time %% 100,
+         minute = replace(minute, minute == 0, 60)) %>%
+  select(minute, dep_delay) %>%
+  mutate(is_delay = (dep_delay > 0),
+         time_interval = cut(minute, breaks = breaks)) %>%
+  group_by(time_interval) %>%
+  summarise(delay_perc = sum(is_delay)/n())
+  
+```
+
+## Time spans 
+
+### 1. Why there is `months()` but no `dmonths()`?
+
+Because the duration of each month is different.
+
+### 2. Explain `days(overnight * 1)`, how does it work?
+
+`T` and `F` will coerce to numerical.
+
+### 3. Create a vector of dates giving the first day of every month in 2015. Create a vector giving the first day of every month in this year.
+
+```{r 11}
+ymd("20150101") + (0:11)*months(1)
+
+ymd(paste0(year(today()),"01","01")) + (0:11)*months(1)
+```
+
+### 4. Write a program gives the years according to your time entry.
+
+```{r 12}
+find_year_old <- function(birthday){
+  (ymd(birthday) %--% today()) %/% dyears(1)
+}
+
+find_year_old("20010201")
+```
+
+### 5. Why can't `today() %--% (today() + years(1)) / months(1)` work?
+
+```{r 13}
+(today() %--% (today() + years(1)) ) / months(1)
+```
+It works!
 
 
 
