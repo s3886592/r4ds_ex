@@ -1,0 +1,73 @@
+---
+title: "ch13"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(lubridate)
+```
+
+## Creating Data/time
+
+### 1. What happens if you parse a string that contains invalid data?
+
+```{r 1}
+ymd(c("2010-10-10", "bananas"))
+```
+
+It will show error in parse, and returns "NA".
+
+
+### 2. What does the tzone argument to today() do? Why is it important?
+
+```{r 2}
+today(tzone = "GMT")
+```
+
+It is the timezone that are interested to find.
+
+### 3. Use lubridate function to parse each of the following datas:
+
+```{r 3}
+d1 <- "January 1, 2010"
+d2 <- "2015-Mar-07"
+d3 <- "06-Jun-2017"
+d4 <- c("August 19 (2015)", "July 1 (2015)")
+d5 <- "12/30/14"
+
+mdy(d1)
+ymd(d2)
+dmy(d3)
+mdy(d4)
+mdy(d5)
+```
+
+## Data-time components
+
+### 1. How does the distribution of flight times within a day change over the course of the year?
+```{r 4}
+library(nycflights13)
+
+flights %>%
+  mutate(date_time = make_datetime(year, month, day, sched_dep_time  %/% 100, sched_dep_time %% 100)) %>%
+  select(date_time, flight) %>%
+  mutate(dep_hour = update(date_time, yday = 1),
+         month = month(date_time, label = T)) %>%
+  ggplot(aes(dep_hour, ..density.., color = month)) +
+  geom_freqpoly()
+  
+```
+
+
+
+
+
+
+
+
+
+
+
+
