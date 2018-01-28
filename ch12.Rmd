@@ -1,0 +1,137 @@
+---
+title: "ch12"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(forcats)
+```
+
+## General social survey
+
+### 1. Explore the distribution of `rincome`.
+
+```{r 1}
+gss_cat %>% 
+  count(rincome)
+
+gss_cat %>% 
+  ggplot(aes(rincome)) +
+  geom_bar()
+```
+
+It is hard to understand because the order of the factors are messed.
+
+
+### 2.  What is the most common `relig` in this survery? What is the most common `partyid`?
+
+```{r 2}
+gss_cat %>%
+  count(relig) %>%
+  arrange(desc(n))
+
+gss_cat %>%
+  count(partyid) %>%
+  arrange(desc(n))
+
+```
+
+### 3. Which `relig` does `denom` apply to? How can you find out with a table? How can you find out with visualization?
+
+```{r 3}
+gss_cat %>%
+  filter(denom != "Not applicable") %>%
+  count(relig) %>%
+  arrange(desc(n))
+
+gss_cat %>%
+  mutate(is_denom = (denom == "Not applicable")) %>%
+  ggplot(aes(relig, fill = is_denom)) +
+  geom_bar()
+
+```
+
+## Modifying factor order
+
+### 1 Some TV hours are suspiciously high. Is the mean a good summary?
+```{r 4}
+gss_cat %>%
+  filter(!is.na(tvhours)) %>%
+  ggplot(aes(reorder(relig, tvhours), tvhours)) +
+  geom_boxplot() +
+  coord_flip() +
+  labs(y = "relig")
+
+```
+
+Maybe a box-plot is better
+
+### 2. Check the orders of the factors in `gss_cat`.
+
+```{r 5}
+fct_ind <- sapply(gss_cat, is.factor)
+cats <- gss_cat[,fct_ind]
+lapply(cats, levels)
+
+```
+Seems like it is arranged.
+
+### 3. Why did moving "Not applicable" to the front of the levels?
+
+It is the smallest value, when represented in integer. To reverse the order, 'fct_rev' can help.
+
+```{r 6}
+gss_cat$rincome %>% levels()
+
+gss_cat$rincome %>% relevel("Not applicable") %>% levels()
+
+gss_cat %>%
+  count(relig, sort = T)
+
+```
+
+## Modifying factor level
+
+### 1. Have the proportions of people identifying as Democrat, Republican, and Independent changed over time?
+
+```{r 7}
+gss_cat$partyid %>% unique()
+
+gss_party <- gss_cat %>%
+  mutate(partyid = fct_collapse(partyid,
+    other = c("No answer", "Don't know", "Other party"),
+    rep = c("Strong republican", "Not str republican"),
+    ind = c("Ind,near rep", "Independent", "Ind,near dem"),
+    dem = c("Not str democrat", "Strong democrat")
+  )) 
+
+gss_party %>%
+  filter(!is.na(age)) %>%
+  group_by(age, partyid) %>%
+  count() %>%
+  group_by(age) %>%
+  mutate(sum_n = sum(n),
+    prop = n / sum_n*100) %>%
+  ggplot(aes(age, prop, color = fct_reorder2(partyid, age, prop))) +
+  geom_line() +
+  labs(colour = "Party")
+
+```
+
+### 2. How do you collapse `rincome` to a small set of categories?
+
+Bind the categories by the value ranges.
+
+
+
+
+
+
+
+
+
+
+
+
