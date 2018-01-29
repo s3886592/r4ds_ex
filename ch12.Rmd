@@ -115,7 +115,8 @@ gss_party %>%
   mutate(sum_n = sum(n),
     prop = n / sum_n*100) %>%
   ggplot(aes(age, prop, color = fct_reorder2(partyid, age, prop))) +
-  geom_line() +
+  geom_point() +
+  geom_smooth(method = 'loess') +
   labs(colour = "Party")
 
 ```
